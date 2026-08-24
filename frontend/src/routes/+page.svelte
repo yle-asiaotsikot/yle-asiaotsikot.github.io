@@ -4,9 +4,16 @@
 
 	let { data }: { data: PageData } = $props();
 	let feed = $derived(data.feed);
+	let error = $derived(data.error);
 </script>
 
 <Feed {feed} />
+
+{#if error}
+	<p class="container mx-auto px-4 text-red-600 md:px-8">
+		Syötteen lataaminen epäonnistui. Yritä myöhemmin uudelleen.
+	</p>
+{/if}
 
 <!-- <div class="container mx-auto py-8 md:px-8">
 	<h1 class="mx-4 text-2xl font-bold md:mx-0">YLE Asiaotsikot</h1>

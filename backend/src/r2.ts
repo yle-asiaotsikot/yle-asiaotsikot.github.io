@@ -25,7 +25,6 @@ export async function uploadJson(
     headers: {
       Authorization: `Bearer ${token}`,
       "Content-Type": "application/json; charset=utf-8",
-      // Today's file is overwritten on the afternoon run, so keep caches short.
       "Cache-Control": "public, max-age=300",
     },
     body: JSON.stringify(data, null, 2),

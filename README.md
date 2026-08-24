@@ -15,11 +15,11 @@ YLE Asiaotsikot is an automated news feed generator that:
 
 ## Tech Stack
 
-**Frontend** is staticly rendered SvelteKit and Tailwind CSS project. The frontend content is baked at build time due to rate limits, previous days are fetched on demand.
+**Frontend** is a statically built SvelteKit and Tailwind CSS single-page app. All feeds (today's and previous days') are fetched from the R2 bucket in the browser.
 
 **Backend** consists of a periodically running node script that fetches news articles, processes them with AI, and stores them in a SQLite database to cache results. It then uploads the daily feed as `<date>.json` to a Cloudflare R2 bucket, which the frontend reads.
 
-**Infrastructure** is handled with Github Actions, Pages, GHCR & Cloudflare R2. Docker image of the backend is automatically built and pushed to ghcr.io on every push. The backend will trigger a rebuild of the frontend using a webhook after processing new articles.
+**Infrastructure** is handled with Github Actions, Pages, GHCR & Cloudflare R2. On every push to `master` the backend Docker image is built and pushed to ghcr.io, and the frontend is built and deployed to GitHub Pages.
 
 ## Project Structure
 

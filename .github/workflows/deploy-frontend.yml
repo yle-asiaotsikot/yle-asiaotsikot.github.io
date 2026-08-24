@@ -1,12 +1,9 @@
 name: Deploy to GitHub Pages
 
 on:
-  # push:
-  #   branches: [master]
+  push:
+    branches: [master]
   workflow_dispatch:
-  repository_dispatch:
-    types:
-      - webhook
 
 jobs:
   deploy-frontend:

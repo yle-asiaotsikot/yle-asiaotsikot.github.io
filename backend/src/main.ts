@@ -226,7 +226,7 @@ async function processArticles() {
 }
 
 /**
- * Publish the latest frontpage collection to Cloudflare R2 and trigger a rebuild of the frontend site.
+ * Publish the latest frontpage collection to Cloudflare R2.
  */
 async function publishFrontpage() {
   const dataSource = await getDataSource();
@@ -261,30 +261,6 @@ async function publishFrontpage() {
   console.log(
     `Successfully uploaded frontpage to R2 at ${key} with ${frontpage.articles.length} articles`,
   );
-
-  console.log("Dispatching build hook to update frontend site...");
-
-  await fetch(
-    "https://api.github.com/repos/yle-asiaotsikot/yle-asiaotsikot.github.io/dispatches",
-    {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `token ${process.env.GITHUB_ACTIONS_TOKEN}`,
-      },
-      body: JSON.stringify({
-        event_type: "webhook",
-      }),
-    },
-  ).then(async (res) => {
-    if (!res.ok) {
-      throw new Error(
-        `Failed to dispatch build hook: ${res.status} ${res.statusText} ${await res.text()}`,
-      );
-    } else {
-      console.log("Successfully dispatched build hook.");
-    }
-  });
 }
 
 async function main() {
