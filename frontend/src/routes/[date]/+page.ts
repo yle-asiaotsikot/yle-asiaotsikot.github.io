@@ -9,6 +9,6 @@ export const load: PageLoad = async ({ params }) => {
 
 	return {
 		feed: feed ?? { articles: [], generatedAt: params.date },
-		error: feed ? undefined : 'Rate limited'
+		error: feed ? undefined : 'Failed to fetch feed'
 	};
 };

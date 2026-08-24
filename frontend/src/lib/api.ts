@@ -1,31 +1,27 @@
 import type { Feed } from 'shared';
 import { getDateString } from './utils';
 
+const bucketUrl = (import.meta.env.VITE_R2_BUCKET_URL as string | undefined);
+
 export async function getFeed(opts: { date: string } = { date: getDateString() }): Promise<Feed> {
 	const { date } = opts;
 
-	console.log(
-		`Fetching frontpage for date: ${date} from gist ${import.meta.env.VITE_GITHUB_GIST_ID}`
-	);
-
-	const frontpageUrl = await fetch(
-		`https://api.github.com/gists/${import.meta.env.VITE_GITHUB_GIST_ID}`
-		// {
-		// 	headers: {
-		// 		Authorization: `Bearer ${import.meta.env.VITE_GITHUB_GIST_TOKEN}`
-		// 	}
-		// }
-	)
-		.then((res) => res.json())
-		.then((data) => data?.files[`${date}.json`]?.raw_url as string);
-
-	if (frontpageUrl) {
-		const frontpageData = await fetch(frontpageUrl).then((res) => res.json());
-		return frontpageData as Feed;
+	if (!bucketUrl) {
+		throw new Error('VITE_R2_BUCKET_URL is not set');
 	}
 
-	return {
-		articles: [],
-		generatedAt: date
-	};
+	const url = `${bucketUrl}/${date}.json`;
+	console.log(`Fetching frontpage for date: ${date} from ${url}`);
+
+	const res = await fetch(url);
+
+	if (res.status === 404) {
+		return { articles: [], generatedAt: date };
+	}
+
+	if (!res.ok) {
+		throw new Error(`Failed to fetch feed: ${res.status} ${res.statusText}`);
+	}
+
+	return (await res.json()) as Feed;
 }

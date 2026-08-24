@@ -11,6 +11,6 @@
 
 {#if error}
 	<p class="container mx-auto px-4 text-red-600 md:px-8">
-		Käyttöraja saavutettu. Yritä myöhemmin uudelleen.
+		Syötteen lataaminen epäonnistui. Yritä myöhemmin uudelleen.
 	</p>
 {/if}

@@ -29,7 +29,7 @@ jobs:
       - name: Build
         run: npm run build
         env:
-          VITE_GITHUB_GIST_ID: ${{ vars.VITE_GITHUB_GIST_ID }}
+          VITE_R2_BUCKET_URL: ${{ vars.VITE_R2_BUCKET_URL }}
 
       - name: Configure Pages
         uses: actions/configure-pages@v5

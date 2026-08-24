@@ -17,6 +17,7 @@ import {
   getTitleImprovementTemplate,
 } from "./title-improvement-template";
 import { logLLMObjectResponse, logLLMTextResponse } from "./utils";
+import { uploadJson } from "./r2";
 import { CronJob } from "cron";
 
 const articleCount = Number(process.env.ARTICLE_COUNT) || 15;
@@ -225,7 +226,7 @@ async function processArticles() {
 }
 
 /**
- * Publish the latest frontpage collection to GitHub Gist and trigger a rebuild of the frontend site.
+ * Publish the latest frontpage collection to Cloudflare R2 and trigger a rebuild of the frontend site.
  */
 async function publishFrontpage() {
   const dataSource = await getDataSource();
@@ -256,30 +257,10 @@ async function publishFrontpage() {
     generatedAt: new Date(collection.createdAt)?.toISOString(),
   };
 
-  const files: Record<string, { content: string }> = {};
-
-  files[`${date}.json`] = {
-    content: JSON.stringify(frontpage, null, 2),
-  };
-
-  await fetch(`https://api.github.com/gists/${process.env.GITHUB_GIST_ID}`, {
-    method: "PATCH",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `token ${process.env.GITHUB_GIST_TOKEN}`,
-    },
-    body: JSON.stringify({
-      files,
-    }),
-  }).then((res) => {
-    if (!res.ok) {
-      throw new Error(`Failed to update gist: ${res.status} ${res.statusText}`);
-    } else {
-      console.log(
-        `Successfully updated gist with frontpage data for date: ${date} and ${frontpage.articles.length} articles`,
-      );
-    }
-  });
+  const key = await uploadJson(`${date}.json`, frontpage);
+  console.log(
+    `Successfully uploaded frontpage to R2 at ${key} with ${frontpage.articles.length} articles`,
+  );
 
   console.log("Dispatching build hook to update frontend site...");
 
