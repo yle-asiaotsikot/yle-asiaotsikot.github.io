@@ -26,6 +26,7 @@ const rateLimitRequestsPerMinute =
 const rateLimitRequestsPerDay =
   Number(process.env.RATE_LIMIT_REQUESTS_PER_DAY) || 0;
 let dailyRequestCount = 0;
+const skipInitialRun = process.env.SKIP_INITIAL_RUN && (process.env.SKIP_INITIAL_RUN.toLocaleLowerCase()  === "true");
 
 /**
  * Fetch articles from Yle RSS feed, save new ones to the database,
@@ -275,7 +276,11 @@ async function main() {
 // Run if this file is executed directly
 if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
   (async () => {
-    await main();
+    if (skipInitialRun) {
+      console.log("SKIP_INITIAL_RUN is set, waiting for next scheduled run.");
+    } else {
+      await main();
+    }
 
     // Run once per day at 7.05 AM
     const job = new CronJob("5 7 * * *", async () => {

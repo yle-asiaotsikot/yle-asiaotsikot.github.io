@@ -73,6 +73,7 @@ R2_BUCKET_NAME=...
 
 # Optional
 ARTICLE_COUNT=15  # Number of articles to fetch (default: 15)
+SKIP_INITIAL_RUN=true
 ```
 
 See [`backend/.env.example`](./backend/.env.example), [`frontend/.env.example`](./frontend/.env.example), [`package.json`](./package.json)
