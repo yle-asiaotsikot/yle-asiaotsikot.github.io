@@ -21,8 +21,6 @@ import { uploadJson } from "./r2";
 import { CronJob } from "cron";
 
 const articleCount = Number(process.env.ARTICLE_COUNT) || 15;
-const rateLimitRequestsPerMinute =
-  Number(process.env.RATE_LIMIT_REQUESTS_PER_MINUTE) || 0;
 const rateLimitRequestsPerDay =
   Number(process.env.RATE_LIMIT_REQUESTS_PER_DAY) || 0;
 let dailyRequestCount = 0;
@@ -158,69 +156,83 @@ async function processArticles() {
     await em.persistAndFlush(article);
   }
 
-  for (const article of articlesToProcess) {
-    if (
-      rateLimitRequestsPerDay &&
-      dailyRequestCount >= rateLimitRequestsPerDay
-    ) {
-      console.log(
-        `Daily request limit of ${rateLimitRequestsPerDay} reached. Skipping processing.`,
-      );
-      continue;
-    } else {
-      dailyRequestCount++;
-    }
-
-    console.log("Generating improved title:", article.title, article.url);
-
+  const articlesWithBody = articlesToProcess.filter((article) => {
     if (!article.body) {
       console.warn(
         `Can't process, article body is empty for URL: ${article.url}`,
       );
-      continue;
+      return false;
     }
+    return true;
+  });
 
-    const titleImprovementPrompt = getTitleImprovementTemplate({
+  if (articlesWithBody.length === 0) {
+    console.log("No articles with bodies to process.");
+    return;
+  }
+
+  if (rateLimitRequestsPerDay && dailyRequestCount >= rateLimitRequestsPerDay) {
+    console.log(
+      `Daily request limit of ${rateLimitRequestsPerDay} reached. Skipping processing.`,
+    );
+    return;
+  }
+  dailyRequestCount++;
+
+  console.log(
+    `Generating improved titles for ${articlesWithBody.length} articles.`,
+  );
+
+  const titleImprovementPrompt = getTitleImprovementTemplate({
+    articles: articlesWithBody.map((article, index) => ({
+      id: index + 1,
       title: article.title,
-      body: article.body,
+      body: article.body!,
+    })),
+  });
+
+  const { object } = await generateObject({
+    model: google("gemini-flash-latest"),
+    schema: z.object({
+      results: z.array(
+        z.object({
+          id: z.number(),
+          improvedTitle: z.string().optional(),
+        }),
+      ),
+    }),
+    prompt: titleImprovementPrompt,
+  })
+    .then(logLLMObjectResponse)
+    .catch((err) => {
+      console.error("Error generating improved titles:", err);
+      return { object: undefined };
     });
 
-    const { object } = await generateObject({
-      model: google("gemini-flash-latest"),
-      schema: z.object({
-        improvedTitle: z.string().optional(),
-      }),
-      prompt: titleImprovementPrompt,
-    })
-      .then(logLLMObjectResponse)
-      .catch((err) => {
-        console.error("Error generating improved title:", err);
-        return { object: undefined };
-      });
+  if (!object) {
+    console.error("Failed to extract improved titles. No object returned.");
+    return;
+  }
 
-    if (!object) {
-      console.error("Failed to extract improved title. No object returned.");
+  console.log("Extracted object:", object, "\n\n===\n\n");
+
+  // Articles missing from the response keep didProcessTitle = false and
+  // are retried on the next run.
+  for (const result of object.results) {
+    const article = articlesWithBody[result.id - 1];
+
+    if (!article) {
+      console.warn(`Response contained unknown article id: ${result.id}`);
       continue;
     }
 
-    console.log("Extracted object:", object, "\n\n===\n\n");
-
-    article.correctedTitle = object.improvedTitle || undefined;
+    article.correctedTitle = result.improvedTitle || undefined;
     article.didProcessTitle = true;
     await em.persistAndFlush(article);
 
     console.log(
       `Processed article: "${article.title}" -> "${article.correctedTitle}"`,
     );
-
-    if (
-      rateLimitRequestsPerMinute &&
-      articlesToProcess.indexOf(article) < articlesToProcess.length - 1
-    ) {
-      const delay = (60 / rateLimitRequestsPerMinute) * 1000 + 2000;
-      console.log(`Waiting for ${delay} ms to respect rate limits...`);
-      await new Promise((resolve) => setTimeout(resolve, delay));
-    }
   }
 
   console.log("Article processing completed.");

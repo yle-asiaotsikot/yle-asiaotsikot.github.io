@@ -1,8 +1,7 @@
 export const getTitleImprovementTemplate = (opts: {
-  title: string;
-  body: string;
+  articles: { id: number; title: string; body: string }[];
 }) => {
-  return `Your task is to review a headline and (only if) necessary, modify if based on the contents of the article to not include a click bait. Example:
+  return `Your task is to review news headlines and (only if) necessary, modify them based on the contents of their articles to not include click bait. Example:
 
 HS: Eagle S -aluksen varustamoa edustanut asianajaja sai huomautuksen
 From the article: "Eagle S -säiliöaluksen varustamoa edustanut asianajaja Herman Ljungberg on saanut huomautuksen asianajajia valvovalta valvontalautakunnalta, kertoo Helsingin Sanomat. Lehti kertoo, että huomautuksen syynä ovat asianajajan medialle antamat lausunnot."
@@ -17,9 +16,11 @@ From the article: "Tutkijat havaitsivat, että Branyasin suolisto oli kuin nuore
 Corrected headline: Tutkijat havaitsivat poikkeuksen 117-vuotiaaksi eläneessä – ”Suolisto[bakteeristo] oli kuin nuorella ihmisellä”
 The headline required correction, because to the reader the most interesting thing about the headline is what scientists think was the key behind her long life. Many people want to live longer, hence for most people the reason to her long life is the most interesting part of the article, as opposed to who the person was that lived long, for example.
 
-Review and if necessary fix the following headline based on the article below. If no changes are necessary, return an empty string. Don't change the language of the headline.
-${opts.title}
-${opts.body}`;
+Review each of the numbered articles below independently, and if necessary, fix its headline based on the article contents. For every article, return its id together with the corrected headline, or an empty string if no changes are necessary. Don't change the language of the headlines.
+
+${opts.articles
+  .map((article) => `<ARTICLE>${article.id}:\n${article.title}\n${article.body}</ARTICLE>`)
+  .join("\n\n---\n\n")}`;
 };
 
 export const extractImprovedTitle = (opts: { analysis: string }) => {
